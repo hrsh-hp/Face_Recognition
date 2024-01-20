@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition</title>
+</head>
+<body>
+    <!-- Simple video view to show webcam video -->
+    <h3>Real Time Face Detection</h3>
+    <video id="webcam" width="300" height="300" autoplay ></video>
+    <canvas id="canvas" height="300" width="300" ></canvas> 
+    <button id="capture" onclick="captureImage()">Capture</button>
+
+    <!-- Response image from backend -->
+    <p id="name"></p>
+    <img id="response-image" width="300" height="300" alt="Reponse image" >
+
+    <form method="POST" id="csrf-form">
+        {% csrf_token %}
+    </form>
+    
+    
+    <script>
+        const webcam = document.getElementById('webcam')
+        const canvas = document.getElementById('canvas')
+        const capture = document.getElementById('capture')
+        const context = canvas.getContext('2d')
+        let isPaused = false
+
+        // Request permission to access the camera
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    webcam.srcObject = stream;
+                    // Every task in this will be done at regular intervals
+                    setInterval(() => {
+                        // console.log('Webcam:',webcam) //this is used to show what data is in webcam element
+                        if (webcam && webcam.srcObject) {
+                            // Draw current frame of a webcam 
+                            context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+                                
+                            // Convert a frame into base64 Jpeg
+                            const imageData = canvas.toDataURL('image/jpeg');
+                            //console.log(imageData);
+                            sendImageToBackend(imageData);
+                                                            
+                        } else{
+                            console.log('Can not get the webcam object');
+                        }
+                    }, 10000); 
+                })
+                .catch((error) => {
+                    console.error('Error accessing camera:', error);
+                });
+        } else {
+            console.error('getUserMedia is not supported in this browser');
+        }
+
+        function captureImage(){
+            if (webcam && webcam.srcObject){
+                    // Draw current frame of a webcam 
+                    context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+                    // Convert a frame into base64 Jpeg
+                    const imageData = canvas.toDataURL('image/jpeg');
+                    //console.log(imageData);
+                    sendImageToBackend(imageData);
+            }else{
+                console.log('Cannot get the webcam obeject');
+            }
+        }
+
+
+        // The logic of sending image to Django backend is here
+        function sendImageToBackend(imageData){
+            //console.log('sendiamage:',imageData);
+            //get the image of current frame and POST it to the backend view
+            fetch('/Auth/face_recognize/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.getElementsByName('csrfmiddlewaretoken')[0].value
+                },
+                body: `imageData=${encodeURIComponent(imageData)}`,
+            })
+            .then(response => response.json())  // Get the Json response 
+            .then(data => {
+                const name = document.getElementById('name');
+                name.textContent = data.name;
+                const response_img = document.getElementById('response-image');
+                response_img.src = `data:image/jpeg;base64, ${data.image}`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+
+    
+
+</body>
+</html>
+
+
+<!-- 
+    Set insterval logic for image capturing
+    setInterval(() => {
+                            // console.log('Webcam:',webcam) //this is used to show what data is in webcam element
+                            if (webcam && webcam.srcObject) {
+                                webcam.addEventListener('loadeddata', function() {
+                                    // Draw current frame of a webcam 
+                                    context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+                                    
+                                });
+                                // Convert a frame into base64 Jpeg
+                                const imageData = canvas.toDataURL('image/jpeg');
+                                console.log(imageData);
+                                sendImageToBackend(imageData);
+                                                                
+                            } else{
+                                console.log('Can not get the webcam object');
+                            }
+                        }, 30000); 
+                    
+-->

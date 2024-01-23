@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 # Create your models here.
 class KnownFace(models.Model):
@@ -8,3 +9,9 @@ class KnownFace(models.Model):
     
     def __str__(self):
         return self.name
+
+# class CustomeUser(AbstractUser):
+    
+#     phone_num = models.CharField(max_length=12,unique=True)
+#     email = models.EmailField(unique= True, max_length=254)
+#     user_image

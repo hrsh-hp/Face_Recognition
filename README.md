@@ -45,7 +45,7 @@ The Facial Recognition System with Django is a versatile application designed fo
     .\venv\Scripts\activate
     ```
 
-### Installing Dependencies and Running the Server
+### Initializing Dependencies and Running the Server
 
 4. Install Django in the virtual environment:
     ```bash
@@ -62,26 +62,41 @@ The Facial Recognition System with Django is a versatile application designed fo
     cd Face_Recognition
     ```
 
-7. Install project dependencies:
+8. Install project dependencies:
     ```bash
     pip install -r requirements.txt
     ```
-8. Create Superuser to access admin panel
+9. Create Superuser to access admin panel
     ```bash
     python manage.py createsuperuser
     ```
     
-9. Make changes in database using makemigrations:
+10. Make changes in database using makemigrations:
     ```bash
     python manage.py makemigrations
     ```
 
-10. Update the actual database:
+11. Update the actual database:
     ```bash
     python manage.py migrate
     ```
 
-11. Try running the server:
+12. Try running the server:
     ```bash
     python manage.py runserver
+    ```
+
+
+#### There's a need for initializing SECRET_KEY and .env.
+
+1. Generate SECRET_KEY in python shell:
+    ```bash
+    from django.core.management.utils import get_random_secret_key
+    print('SECRET_KEY=',get_random_secret_key())
+    ```
+
+2. Add SECRET_KEY in .env :
+    
+    ```bash
+    SECRET_KEY= <YOUR GENERATED SECRET_KEY>
     ```

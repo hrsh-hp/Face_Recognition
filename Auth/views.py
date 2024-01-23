@@ -44,11 +44,11 @@ def recognize_face(request):
             frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
             
             # getting face encodings from received image
-            rec_face_locations = face_recognition.face_locations(frame)
-            rec_face_encodings = face_recognition.face_encodings(frame, rec_face_locations)
+            rec_face_locations = face_recognition.face_locations(frame, number_of_times_to_upsample=2)
+            rec_face_encodings = face_recognition.face_encodings(frame,rec_face_locations)
          
             recognized_name = []
-            name = "unknown"
+            name = "Unknown!!"
 
             #comparing known face encodings with received face encodings
             for rec_face_encoding in rec_face_encodings:
@@ -62,7 +62,6 @@ def recognize_face(request):
             
 
                 matches = face_recognition.compare_faces(list(known_faces.values()), rec_face_encoding)
-                
                 
                 if True in matches:
   

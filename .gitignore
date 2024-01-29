@@ -5,8 +5,13 @@
 *.log
 *.pot
 *.pyc
-__pycache__/
+__pycache__/**
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media/
+views-old.py
+# Ignore Django Migrations in Development if you are working on team
+
+# Only for Development only
+**/migrations/**

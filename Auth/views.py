@@ -2,8 +2,7 @@ from django.http import JsonResponse,HttpResponse
 from django.shortcuts import render,redirect
 from django.views.decorators.csrf import csrf_exempt
 from .models import *
-from django.contrib.auth import authenticate,login,logout
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate,login,logout,get_user_model
 import uuid
 from .helpers import send_email_token
 from django.contrib import messages

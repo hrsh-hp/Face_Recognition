@@ -1,7 +1,14 @@
 from django.http import JsonResponse,HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.views.decorators.csrf import csrf_exempt
 from .models import *
+from django.contrib.auth import authenticate,login,logout
+from django.contrib.auth import get_user_model
+import uuid
+from .helpers import send_email_token
+from django.contrib import messages
+
+User = get_user_model()
 
 #for face recogniton
 import face_recognition
@@ -10,26 +17,6 @@ import cv2
 from PIL import Image
 import numpy as np
 from io import BytesIO
-
-# Function to load the known faces for now it's manual process
-# def load_known_faces():
-#     known_faces = {}
-    
-#     name_paths = [
-#         ("Harsh","static/images/Harsh.jpeg"),
-#         ("Gautam","static/images/Gautam.jpeg"),
-#         ("Dipen","static/images/Dipen.jpeg"),
-#     ]
-    
-#     for name, file in name_paths:
-#         image = face_recognition.load_image_file(file)
-#         face_encoding = face_recognition.face_encodings(image)[0]
-#         known_faces[name] = face_encoding
-        
-#     # print(known_faces)
-#     return known_faces
-
-# known_faces = load_known_faces()
 
 # Face Recognition view 
 @csrf_exempt
@@ -90,3 +77,95 @@ def recognize_face(request):
 
 def index(request):
     return render(request, 'Auth/index.html')
+
+#Register Page logic
+def register(request):
+    #When user request for registraion
+    if request.method == "POST":
+        try:
+            email = request.POST.get('email')
+            phone_num = request.POST.get('phone_num')
+            password = request.POST.get('password')
+            first_name = request.POST.get('first_name')
+            last_name = request.POST.get('last_name')
+            user_image = request.POST.get('user_image')
+            email_token = str(uuid.uuid4())
+            user = User.objects.create(
+                email= email,
+                phone_num= phone_num,
+                first_name = first_name,
+                last_name = last_name,
+                user_image = user_image,
+            )
+            user.set_password(password)
+            user.email_token = email_token
+            user.save()
+            email_sent = send_email_token(email, email_token)
+            if email_sent is False:
+                messages.info(request, "There's some problem in sending mail to you plese check your email.")
+                return redirect('Auth:register')
+            
+            messages.info(request, "A verification mail is sent to your mail id")
+            return redirect('Auth:register')
+                
+            
+        except Exception as e:
+            print(e)
+            messages.info(request, "Something went wrong now.")
+            return redirect('Auth:register')
+   
+    #when user send request to view template
+    return render(request, 'Auth/register.html')
+
+def verify(request, email_token):
+    try:
+        user_obj = User.objects.filter(email_token = email_token).first()
+    
+        if user_obj:
+            if user_obj.is_email_verified:
+                messages.info(request, "Your email is already verified You can Log-In.")
+                return redirect("Auth:login_page")
+            
+            user_obj.is_email_verified = True
+            user_obj.save()
+            messages.info(request, "Your account has been verified you can Log-In now.")
+            return redirect('Auth:login_page')
+            
+        else:
+            messages.info(request, "Invalid verification link.")
+            return redirect('Auth:register')
+                    
+    except Exception as e:
+        print(e)
+
+
+def login_page(request):
+    
+    if request.method == "POST":
+        try:
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+            
+            user_obj = User.objects.filter(email = email).first()
+            
+            if user_obj is None:
+                messages.info(request, "No user with this email is exist you can Register.")
+                return redirect('Auth:register')
+            
+            if not user_obj.is_email_verified:
+                messages.info(request, "Your email is not verified please verify first.")
+                return redirect('Auth:login_page') 
+            
+            user = authenticate(email=email, password=password)
+            if user is None:
+                messages.info(request, "Invalid username or Password.")
+                return redirect('Auth:login_page')
+            
+            login(request,user)
+            return redirect('Auth:index')
+        
+        except Exception as e:
+            print(e)    
+            
+    
+    return render(request,'Auth/login_page.html')

@@ -1,6 +1,7 @@
 from django.http import JsonResponse,HttpResponse
 from django.shortcuts import render,redirect
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from .models import *
 from django.contrib.auth import authenticate,login,logout,get_user_model
 import uuid
@@ -41,10 +42,10 @@ def recognize_face(request):
                 
                 #Getting the known faces from database
                 known_faces = {}
-                for face_obj in KnownFace.objects.all():
-                    known_image_data = base64.b64decode(face_obj.image.split(',')[1])
+                for face_obj in User.objects.filter(is_superuser = False):
+                    known_image_data = base64.b64decode(face_obj.user_image.split(',')[1])
                     known_image = Image.open(BytesIO(known_image_data))
-                    known_faces[face_obj.name] = face_recognition.face_encodings(np.array(known_image))[0]
+                    known_faces[face_obj.first_name] = face_recognition.face_encodings(np.array(known_image))[0]
             
 
                 matches = face_recognition.compare_faces(list(known_faces.values()), rec_face_encoding)
@@ -73,9 +74,10 @@ def recognize_face(request):
     else:
         print('not a Post method')
         return JsonResponse({'err':"Invalid request method it must be POST"})
-
+    
+@login_required(login_url='Auth:login_page')
 def index(request):
-    return render(request, 'Auth/index.html')
+    return render(request, 'index.html')
 
 #Register Page logic
 def register(request):
@@ -87,7 +89,8 @@ def register(request):
             password = request.POST.get('password')
             first_name = request.POST.get('first_name')
             last_name = request.POST.get('last_name')
-            user_image = request.POST.get('user_image')
+            user_image = request.POST.get('image_base64')
+            print(user_image)
             email_token = str(uuid.uuid4())
             user = User.objects.create(
                 email= email,
@@ -114,7 +117,7 @@ def register(request):
             return redirect('Auth:register')
    
     #when user send request to view template
-    return render(request, 'Auth/register.html')
+    return render(request, 'register.html')
 
 def verify(request, email_token):
     try:
@@ -167,4 +170,4 @@ def login_page(request):
             print(e)    
             
     
-    return render(request,'Auth/login_page.html')
+    return render(request,'login_page.html')

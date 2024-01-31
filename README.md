@@ -66,19 +66,20 @@ The Facial Recognition System with Django is a versatile application designed fo
     ```bash
     pip install -r requirements.txt
     ```
-9. Create Superuser to access admin panel
-    ```bash
-    python manage.py createsuperuser
-    ```
     
-10. Make changes in database using makemigrations:
+9.  Make changes in database using makemigrations:
     ```bash
     python manage.py makemigrations
     ```
 
-11. Update the actual database:
+10. Update the actual database:
     ```bash
     python manage.py migrate
+    ```
+
+11. Create Superuser to access admin panel
+    ```bash
+    python manage.py createsuperuser
     ```
 
 12. Try running the server:
@@ -99,4 +100,6 @@ The Facial Recognition System with Django is a versatile application designed fo
     
     ```bash
     SECRET_KEY= <YOUR GENERATED SECRET_KEY>
+    EMAIL_HOST_USER = "<Your email Id>"
+    EMAIL_HOST_PASSWORD = "<You email app password>" 
     ```

@@ -1,63 +1,40 @@
 <!DOCTYPE html>
-{% load static %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Recognition</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+{% extends "base.html" %}
+
+{% block extra_style %}  
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            text-align: center;
-            margin: 20px;
-        }
-
-
-
-        #webcam-container {
-            border: 2px solid #333;
-            border-radius: 5px;
-            overflow: hidden;
-            width: 320px;
-            height: 240px;
-            margin: 0 auto 20px;
-        }
-
-        #webcam {
-            width: 100%;
-            height: 100%;
-        }
-
-        #canvas, #response-image {
-            display: none;
-            margin: 10px auto;
-            border: 2px solid #333;
-            border-radius: 5px;
-        }
-
-        #name {
-            margin-top: 10px;
-            font-weight: bold;
+            background: linear-gradient(to top, #3D3B40 0%,#3D3B40 50%, #BFCFE7 50%,#BFCFE7 100% );
         }
     </style>
-</head>
-<body>
-    <!-- Simple video view to show webcam video -->
-    <h3 style="color: #333">Real Time Face Detection</h3>
-    <div id="webcam-container">
-        <video id="webcam" autoplay ></video>
+{% endblock extra_style %}
+
+{% block body_block %}
+    <div class="row justify-content-center min-vh-100 ">
+        <div class="col-md-8 ">
+            <!-- Simple video view to show webcam video -->
+            <h3 style="color: #333; text-align: center; margin: 0 auto 4px" >Real Time Face Detection</h3>
+            <div id="webcam-container" class="rounded">
+                <video id="webcam" autoplay ></video>
+                <canvas id="canvas" height="240" width="320" class="rounded"></canvas>
+            </div>
+            <div class="button-text">
+                <button id="capture" onclick="captureImage()" class="btn btn-success m-auto">Capture</button>   
+            </div>
+            <!-- Response image from backend -->
+            
+            <div class="img-text">
+                <img id="response-image" width="290" height="218" alt="Reponse image" >
+                <p id="name"></p>
+            </div>
+            <form method="POST" id="csrf-form">
+                {% csrf_token %}
+            </form>  
+        </div> 
     </div>
-    <canvas id="canvas" height="240" width="320" ></canvas> 
-    <button id="capture" onclick="captureImage()" class="btn btn-success">Capture</button>
+{% endblock body_block %}
 
-    <!-- Response image from backend -->
-    <p id="name"></p>
-    <img id="response-image" width="320" height="240" alt="Reponse image" >
-
-    <form method="POST" id="csrf-form">
-        {% csrf_token %}
-    </form>    
+{% block script_block %}   
     <script>
         const webcam = document.getElementById('webcam')
         const canvas = document.getElementById('canvas')
@@ -129,31 +106,9 @@
             });
         }
     </script>
+{% endblock script_block %}
 
     
 
-</body>
-</html>
 
 
-<!-- 
-    Set insterval logic for image capturing
-    setInterval(() => {
-                            // console.log('Webcam:',webcam) //this is used to show what data is in webcam element
-                            if (webcam && webcam.srcObject) {
-                                webcam.addEventListener('loadeddata', function() {
-                                    // Draw current frame of a webcam 
-                                    context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
-                                    
-                                });
-                                // Convert a frame into base64 Jpeg
-                                const imageData = canvas.toDataURL('image/jpeg');
-                                console.log(imageData);
-                                sendImageToBackend(imageData);
-                                                                
-                            } else{
-                                console.log('Can not get the webcam object');
-                            }
-                        }, 30000); 
-                    
--->

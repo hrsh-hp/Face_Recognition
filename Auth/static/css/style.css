@@ -4,19 +4,20 @@ body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
+
 .register-container {
     background-color: #fff;
-    border-radius: 10px;
+    border-radius: 20px;
     box-shadow: 20px 20px 20px rgba(0, 0, 0, 0.1);
     padding: 40px;
-    max-width: 450px;
-    width: 90%;
-    text-align: center;
-    margin: 0 auto;
+    max-width: 550px;
+    width: 85%;
+    text-align: left;
+    margin: 7% auto;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .custom-file-label {
@@ -49,6 +50,21 @@ body {
     color: #0056b3;
     margin-top: 2px;
 }
+
+.image-preview-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#previewImage {
+    max-width: 120px;
+    max-height: 100px;
+    margin-left: 5px;
+    border: 1px solid #555;
+    border-radius: 4px;
+}
+
   
   /* Responsive */
 @media screen and (max-width: 600px) {

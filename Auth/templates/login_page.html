@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-{% extends "Auth/base.html" %}
+{% extends "base.html" %}
         
 {% block body_block %}
 
-        <div class="row justify-content-center">
+        <div class="row justify-content-center min-vh-100 align-items-center">
             <div class="col-md-8">
-                <div class="register-container">
+                <div class="register-container rounded">
                     <h2 class="text-center mb-4">Log-in</h2>
                     <form method="POST">
                         {% csrf_token %}
@@ -25,7 +25,7 @@
                             <label for="password">Password</label>
                             <input type="password" class="form-control" name="password" required>
                         </div>
-                        <button type="submit" class="btn btn-primary register-btn">Log-in</button>
+                        <button type="submit" class="btn btn-primary form-control register-btn">Log-in</button>
                         <div class="bottom-text mt-2">
                             <p>Don't have an account? <a href="{% url 'Auth:register' %}">Sign Up</a></p>
                             <p><a href="#">Forgot password?</a></p>

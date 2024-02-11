@@ -14,6 +14,7 @@ class KnownFace(models.Model):
 class CustomUser(AbstractUser):
     
     username = None
+    last_name = models.CharField(max_length=150, blank=True, null=True)
     phone_num = models.CharField(max_length=12,unique=True,null=True, blank=True)
     email = models.EmailField(unique= True, max_length=254)
     email_token = models.CharField(max_length=100, null=True, blank=True)

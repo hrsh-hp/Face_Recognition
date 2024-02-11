@@ -15,7 +15,7 @@ from pathlib import Path
 import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = Path(BASE_DIR,'static')
 TEMPLATE_DIR = Path(BASE_DIR,'templates')
@@ -31,8 +31,16 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
 AUTH_USER_MODEL = 'Auth.CustomUser'
+
+#while using Ngrok or any other server 
+# ALLOWED_HOSTS = ['*']
+# # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SECURE_SSL_REDIRECT = False #True when using additional server
+# DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
+# # CSRF_COOKIE_SECURE = False
+# # CSRF_USE_SESSIONS = False
+# CSRF_TRUSTED_ORIGINS = ["https://submit.jotform.com","https://1ac7-2409-40c1-103c-3ea-fd7e-e45e-c9d3-f991.ngrok-free.app"]
 
 # Application definition
 
@@ -57,6 +65,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
+
 
 ROOT_URLCONF = 'Face_Recognition.urls'
 
@@ -147,3 +156,8 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+
+
+#login 
+LOGIN_URL = 'Auth/login/'
+LOGIN_REDIRECT_URL = "Auth/login/"

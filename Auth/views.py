@@ -27,6 +27,7 @@ def recognize_face(request):
             # decoding the base64 received from frontend into image
             image_data = request.POST.get('imageData')
             img_data = base64.b64decode(image_data.split(',')[1])
+            # print(img_data)
             image = Image.open(BytesIO(img_data))
             frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
             
@@ -45,11 +46,12 @@ def recognize_face(request):
                 for face_obj in User.objects.filter(is_superuser = False):
                     known_image_data = base64.b64decode(face_obj.user_image.split(',')[1])
                     known_image = Image.open(BytesIO(known_image_data))
-                    known_faces[face_obj.first_name] = face_recognition.face_encodings(np.array(known_image))[0]
+                    known_face_enchodings = face_recognition.face_encodings(np.array(known_image))
+                    if known_face_enchodings:
+                        known_faces[face_obj.first_name] = known_face_enchodings[0]
             
 
-                matches = face_recognition.compare_faces(list(known_faces.values()), rec_face_encoding)
-                
+                matches = face_recognition.compare_faces(list(known_faces.values()), rec_face_encoding)                
                 if True in matches:
   
                     first_match_index = matches.index(True)
@@ -75,11 +77,12 @@ def recognize_face(request):
         print('not a Post method')
         return JsonResponse({'err':"Invalid request method it must be POST"})
     
-@login_required(login_url='Auth:login_page')
+@login_required(login_url='login')
 def index(request):
     return render(request, 'index.html')
 
 #Register Page logic
+@csrf_exempt
 def register(request):
     #When user request for registraion
     if request.method == "POST":
@@ -88,9 +91,11 @@ def register(request):
             phone_num = request.POST.get('phone_num')
             password = request.POST.get('password')
             first_name = request.POST.get('first_name')
+            if first_name is "":
+                first_name = str(email).split('@')[0]   
             last_name = request.POST.get('last_name')
             user_image = request.POST.get('image_base64')
-            print(user_image)
+            # print(user_image)
             email_token = str(uuid.uuid4())
             user = User.objects.create(
                 email= email,
@@ -119,6 +124,7 @@ def register(request):
     #when user send request to view template
     return render(request, 'register.html')
 
+@csrf_exempt
 def verify(request, email_token):
     try:
         user_obj = User.objects.filter(email_token = email_token).first()
@@ -140,7 +146,7 @@ def verify(request, email_token):
     except Exception as e:
         print(e)
 
-
+@csrf_exempt
 def login_page(request):
     
     if request.method == "POST":

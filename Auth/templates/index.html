@@ -1,113 +1,283 @@
 <!DOCTYPE html>
-{% extends "base.html" %}
-
-{% block extra_style %}  
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance System</title>
     <style>
         body {
-            background: linear-gradient(to top, #3D3B40 0%,#3D3B40 50%, #BFCFE7 50%,#BFCFE7 100% );
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
-    </style>
-{% endblock extra_style %}
-
-{% block body_block %}
-    <div class="row justify-content-center min-vh-100 ">
-        <div class="col-md-8 ">
-            <!-- Simple video view to show webcam video -->
-            <h3 style="color: #333; text-align: center; margin: 0 auto 4px" >Real Time Face Detection</h3>
-            <div id="webcam-container" class="rounded">
-                <video id="webcam" autoplay ></video>
-                <canvas id="canvas" height="240" width="320" class="rounded"></canvas>
-            </div>
-            <div class="button-text">
-                <button id="capture" onclick="captureImage()" class="btn btn-success m-auto">Capture</button>   
-            </div>
-            <!-- Response image from backend -->
-            
-            <div class="img-text">
-                <img id="response-image" width="290" height="218" alt="Reponse image" >
-                <p id="name"></p>
-            </div>
-            <form method="POST" id="csrf-form">
-                {% csrf_token %}
-            </form>  
-        </div> 
-    </div>
-{% endblock body_block %}
-
-{% block script_block %}   
-    <script>
-        const webcam = document.getElementById('webcam')
-        const canvas = document.getElementById('canvas')
-        const capture = document.getElementById('capture')
-        const context = canvas.getContext('2d')
-        const name = document.getElementById('name')
-        const response_img = document.getElementById('response-image');
-
-        // Request permission to access the camera
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then((stream) => {
-                    webcam.srcObject = stream;
-                    // Every task in this will be done at regular intervals 
-                })
-                .catch((error) => {
-                    console.error('Error accessing camera:', error);
-                });
-        } else {
-            console.error('getUserMedia is not supported in this browser');
+        
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 800px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: #3D3B40;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .content {
+            display: flex;
+            padding: 20px;
+        }
+        
+        .student-image {
+            width: 60%;
+            border-radius: 10px;
+            margin-right: 10px;
+        }
+        
+        .empty-space {
+            width: 40%;
+            background-color: #e6e6fa;
+            border-radius: 10px;
+        }
+        #canvas{
+            display: none;
+            margin: 0 auto;
+            border: 2px solid #333;
+            border-radius: 5px;
+            max-width: 63%;
+            height: 39.5%;
+        }
+        .empty-space {
+            width: 300px;
+            margin: 20px;
+            padding: 20px;
+            border: 2px solid #8a2be2;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .student-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .student-card img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+        }
+        .student-card p {
+            background-color: #8a2be2;
+            color: white;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+        .student-card button{
+            background-color: #8a2be2;
+            color: white;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            margin: 5px 0;
+            box-sizing: border-box;
+            border: none;
+        }
+        #data{
+            display: none;
+        }
+        /* Loader styles */
+        #loader {
+            position: relative;    
+            z-index: 9999;
+            box-sizing: border-box;
         }
 
-        function captureImage(){
-            if (webcam && webcam.srcObject){
-                    // Draw current frame of a webcam 
-                    //console.log('webcam size:', webcam.videoWidth, webcam.videoHeight);
-                    context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
-                    name.textContent = "";
-                    response_img.style= 'display:none;'; //
-                    capture.disabled = true; //Disable the Capture button 
-                    // Convert a frame into base64 Jpeg
-                    const imageData = canvas.toDataURL('image/jpeg');
-                    console.log(imageData);
-                    sendImageToBackend(imageData);
-            }else{
-                console.log('Cannot get the webcam obeject');
+        .spinner {
+            border: 16px solid #f3f3f3;
+            border-top: 16px solid #8a2be2; 
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                width: 100%; /* Full width for smaller screens */
+                border-radius: 0;
+                box-shadow: none;
+            }
+            
+            .content {
+                flex-direction: column; /* Stack content vertically on smaller screens */
+                align-items: center;
+            }
+            
+            .student-image {
+                width: 100%; /* Full width for video */
+                max-width: 100%; /* Ensures video doesn't overflow */
+                margin-bottom: 20px;
+            }
+            
+            #canvas {
+                max-width: 100%; /* Full width for canvas */
+                height: auto;
+            }
+            
+            .empty-space {
+                width: 100%; 
+                box-sizing: border-box;
+                margin: 20px 0;
             }
         }
-
-
-        // The logic of sending image to Django backend is here
-        function sendImageToBackend(imageData){
-            //console.log('sendiamage:',imageData);
-            //get the image of current frame and POST it to the backend view
-            fetch('/Auth/face_recognize/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': document.getElementsByName('csrfmiddlewaretoken')[0].value
-                },
-                body: `imageData=${encodeURIComponent(imageData)}`,
-            })
-            .then(response => response.json())  // Get the Json response 
-            .then(data => {
-                console.log(data.name);
-                capture.disabled = false; //Enable the capture button
-                if(data.name=="Unknown!!") //Change the color of text as per output
-                    {name.style = 'color:red;';}
-                else
-                    {name.style = 'color: #4CAF50;';}
-                name.textContent = data.name;
-                response_img.style= 'display:block;'; //Show the reponse image 
-                response_img.src = `data:image/jpeg;base64, ${data.image}`;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-        }
-    </script>
-{% endblock script_block %}
-
+        
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Face Detector</h1>
+        </div>
+        <div class="content">
+            <video id="webcam" autoplay playsinline class="student-image"></video>
+            <canvas id="canvas" height="240" width="320" class="rounded" ></canvas>
+            <div class="empty-space">
+                <div class="student-card" id="student-card">
+                    <div id="loader" style="display:none;">
+                        <div class="spinner"></div>
+                    </div>
+                    <div id="data">
+                        <img id="student-image" alt="Student Image">
+                        <p id="student-enroll"></p>
+                        <p id="student-name"></p>
+                    </div>
+                    
+                    <button onclick="captureImage()">Capture</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
     
+    const webcam = document.getElementById('webcam')
+    const canvas = document.getElementById('canvas')
+    //const capture = document.getElementById('capture')
+    const context = canvas.getContext('2d')
+    //const name = document.getElementById('name')
+    const studentImg = document.getElementById('student-image');
+    const studentCard = document.getElementById("student-card");
+    const studentEnroll = document.getElementById('student-enroll');
+    const studentName = document.getElementById("student-name");
+    const stuData = document.getElementById('data');
+    const captureBtn = document.querySelector("button");
+    var loader = document.getElementById('loader');
+
+
+    // Request permission to access the camera
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                webcam.srcObject = stream;
+                // Every task in this will be done at regular intervals 
+            })
+            .catch((error) => {
+                console.error('Error accessing camera:', error);
+            });
+    } else {
+        console.error('getUserMedia is not supported in this browser');
+    }
+
+    function captureImage(){
+        if (webcam && webcam.srcObject){
+                // Draw current frame of a webcam 
+                //console.log('webcam size:', webcam.videoWidth, webcam.videoHeight);
+                context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+                
+                stuData.style = "display:none;";
+                captureBtn.disabled = true;
+                // Convert a frame into base64 Jpeg
+                const imageData = canvas.toDataURL('image/jpeg');
+                loader.style.display = 'block';
+                console.log(imageData);
+                sendImageToBackend(imageData);
+                
+
+        }else{
+            console.log('Cannot get the webcam obeject');
+        }
+    }
+
+
+    // The logic of sending image to Django backend is here
+    function sendImageToBackend(imageData){
+        //console.log('sendiamage:',imageData);
+        //get the image of current frame and POST it to the backend view
+        fetch('/face_recognize/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            
+            },
+            body: `imageData=${encodeURIComponent(imageData)}`,
+        })
+        .then(response => response.json())  // Get the Json response 
+        .then(data => {
+           // console.log(data.student['email']);
+            if(data.success){
+                if (data.student['email'] === "Unknown!!" ){
+                    stuData.style = "display:block;"
+                    studentName.textContent = "Unkown!!"
+                    studentEnroll.textContent = "None";
+                    studentImg.src = `data:image/jpeg;base64, ${data.image}`;
+                }
+                else{
+                    stuData.style = 'display:block;'
+                    studentName.textContent = data.student['name'];
+                    studentEnroll.textContent = data.student['enrollment'];
+                    studentImg.src = `data:image/jpeg;base64, ${data.image}`;
+                // console.log(data.image);
+                }
+            }
+            else{
+                alert(data.err);
+            }
+            captureBtn.disabled = false;
+            loader.style.display = 'none';
+            
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+        
+    }
+    setInterval(captureImage, 15000);
+   
+    
+</script>
+</html>
 
 
 

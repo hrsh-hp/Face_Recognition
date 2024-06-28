@@ -7,6 +7,8 @@ from django.contrib.auth import authenticate,login,logout,get_user_model
 import uuid
 from .helpers import send_email_token
 from django.contrib import messages
+import asyncio
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -18,10 +20,41 @@ from PIL import Image
 import numpy as np
 from io import BytesIO
 
+known_faces = {}
+
+def get_known_face_encoding():
+    known_face_encodings = []
+    for face_obj in User.objects.filter(is_superuser = False):
+        known_image_data = base64.b64decode(face_obj.user_image.split(',')[1])
+        known_image = Image.open(BytesIO(known_image_data))
+        known_face_encodings = face_recognition.face_encodings(np.array(known_image))
+        # print(known_face_encodings)
+        if known_face_encodings:
+            known_faces[face_obj.email] = known_face_encodings[0]
+
+    return known_faces
+
+def update_known_faces():
+    known_faces = get_known_face_encoding()
+    cache.set('known_faces', known_faces, timeout=None) 
+    
+def index(request):
+    known_faces = cache.get('known_faces')
+    if known_faces is None:
+        update_known_faces()
+    print(request.user)
+    current_user = User.objects.filter(email = request.user)
+    if not current_user:
+        messages.info(request, "You are not logged in Log-in first.")
+        return redirect('Auth:login_page')
+    return render(request, 'index.html')
+
+                    
 # Face Recognition view 
 @csrf_exempt
 def recognize_face(request):
     # print(known_faces)
+    known_faces = cache.get('known_faces', {})
     if request.method == "POST":
         try:
             # decoding the base64 received from frontend into image
@@ -36,63 +69,64 @@ def recognize_face(request):
             rec_face_encodings = face_recognition.face_encodings(frame,rec_face_locations)
          
             recognized_name = []
-            name = "Unknown!!"
-
+            email = "Unknown!!"
+            student = {"email":email}
+            
             #comparing known face encodings with received face encodings
             for rec_face_encoding in rec_face_encodings:
-                
-                #Getting the known faces from database
-                known_faces = {}
-                for face_obj in User.objects.filter(is_superuser = False):
-                    known_image_data = base64.b64decode(face_obj.user_image.split(',')[1])
-                    known_image = Image.open(BytesIO(known_image_data))
-                    known_face_enchodings = face_recognition.face_encodings(np.array(known_image))
-                    if known_face_enchodings:
-                        known_faces[face_obj.first_name] = known_face_enchodings[0]
-            
-
-                matches = face_recognition.compare_faces(list(known_faces.values()), rec_face_encoding)                
+                matches = face_recognition.compare_faces(list(known_faces.values()), rec_face_encoding)  
+                # print(known_faces.values())              
                 if True in matches:
-  
                     first_match_index = matches.index(True)
-                    name = list(known_faces.keys())[first_match_index]
-                    print(f"Welcome {name}")
-                    recognized_name.append(name)
+                    email = list(known_faces.keys())[first_match_index]
+                    print(f"Welcome {email}")
+                    recognized_name.append(email)
+                    recognized_user = User.objects.filter(email = email ).first()
+                    print(recognized_user.first_name)
+                    student = {
+                        "email":email,
+                        "name":recognized_user.first_name+" "+ recognized_user.last_name,
+                        "enrollment": recognized_user.enrollment,
+                        "department": recognized_user.department
+                    }
                     
                 else :
                     print('face not matches')
-                    
+                  
             print(recognized_name)
+            
             # Convert a frame in to Jpeg
             _ , jpeg = cv2.imencode('.jpeg', frame)
             res_img = jpeg.tobytes()  
-            response = base64.b64encode(res_img).decode('utf-8') 
-            return JsonResponse({'name':name,'image':response})
+            response = base64.b64encode(res_img).decode('utf-8')
+           
+            return JsonResponse({'student':student,'image':response, "success": True})
                     
         except Exception as e:
             print(e)
-            return JsonResponse({'err':str(e)})
+            return JsonResponse({'err':str(e),"success":False})
         
     else:
         print('not a Post method')
         return JsonResponse({'err':"Invalid request method it must be POST"})
     
-@login_required(login_url='login')
-def index(request):
-    return render(request, 'index.html')
 
 #Register Page logic
 @csrf_exempt
 def register(request):
     #When user request for registraion
+    
     if request.method == "POST":
         try:
             email = request.POST.get('email')
             phone_num = request.POST.get('phone_num')
-            password = request.POST.get('password')
+            password = request.POST.get('pasword')
+            enrollment = request.POST.get('enrollment')
             first_name = request.POST.get('first_name')
-            if first_name is "":
-                first_name = str(email).split('@')[0]   
+            print(first_name)
+            if first_name == "":
+                first_name = str(email).split('@')[0] 
+                print(first_name)  
             last_name = request.POST.get('last_name')
             user_image = request.POST.get('image_base64')
             # print(user_image)
@@ -103,6 +137,7 @@ def register(request):
                 first_name = first_name,
                 last_name = last_name,
                 user_image = user_image,
+                enrollment = enrollment
             )
             user.set_password(password)
             user.email_token = email_token

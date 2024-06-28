@@ -37,3 +37,119 @@
     </script>
 
 </html>
+
+
+
+{% comment %} <!DOCTYPE html>
+{% extends "base.html" %}
+
+{% block extra_style %}  
+    <style>
+        body {
+            background: linear-gradient(to top, # 0%,#3D3B40 50%, #BFCFE7 50%,#BFCFE7 100% );
+        }
+    </style>
+{% endblock extra_style %}
+
+{% block body_block %}
+    <div class="row justify-content-center min-vh-100 ">
+        <div class="col-md-8 ">
+            <!-- Simple video view to show webcam video -->
+            <h3 style="color: #333; text-align: center; margin: 0 auto 4px" >Real Time Face Detection</h3>
+            <div id="webcam-container" class="rounded">
+                <video id="webcam" autoplay ></video>
+                <canvas id="canvas" height="240" width="320" class="rounded"></canvas>
+            </div>
+            <div class="button-text">
+                <button id="capture" onclick="captureImage()" class="btn btn-success m-auto">Capture</button>   
+            </div>
+            <!-- Response image from backend -->
+            
+            <div class="img-text">
+                <img id="response-image" width="290" height="218" alt="Reponse image" >
+                <p id="name"></p>
+            </div>
+            <form method="POST" id="csrf-form">
+                {% csrf_token %}
+            </form>  
+        </div> 
+    </div>
+{% endblock body_block %}
+
+{% block script_block %}   
+    <script>
+        const webcam = document.getElementById('webcam')
+        const canvas = document.getElementById('canvas')
+        const capture = document.getElementById('capture')
+        const context = canvas.getContext('2d')
+        const name = document.getElementById('name')
+        const response_img = document.getElementById('response-image');
+
+        // Request permission to access the camera
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    webcam.srcObject = stream;
+                    // Every task in this will be done at regular intervals 
+                })
+                .catch((error) => {
+                    console.error('Error accessing camera:', error);
+                });
+        } else {
+            console.error('getUserMedia is not supported in this browser');
+        }
+
+        function captureImage(){
+            if (webcam && webcam.srcObject){
+                    // Draw current frame of a webcam 
+                    //console.log('webcam size:', webcam.videoWidth, webcam.videoHeight);
+                    context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+                    name.textContent = "";
+                    response_img.style= 'display:none;'; //
+                    capture.disabled = true; //Disable the Capture button 
+                    // Convert a frame into base64 Jpeg
+                    const imageData = canvas.toDataURL('image/jpeg');
+                    console.log(imageData);
+                    sendImageToBackend(imageData);
+            }else{
+                console.log('Cannot get the webcam obeject');
+            }
+        }
+
+
+        // The logic of sending image to Django backend is here
+        function sendImageToBackend(imageData){
+            //console.log('sendiamage:',imageData);
+            //get the image of current frame and POST it to the backend view
+            fetch('/Auth/face_recognize/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.getElementsByName('csrfmiddlewaretoken')[0].value
+                },
+                body: `imageData=${encodeURIComponent(imageData)}`,
+            })
+            .then(response => response.json())  // Get the Json response 
+            .then(data => {
+                console.log(data.name);
+                capture.disabled = false; //Enable the capture button
+                if(data.name=="Unknown!!") //Change the color of text as per output
+                    {name.style = 'color:red;';}
+                else
+                    {name.style = 'color: #4CAF50;';}
+                name.textContent = data.name;
+                response_img.style= 'display:block;'; //Show the reponse image 
+                response_img.src = `data:image/jpeg;base64, ${data.image}`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </scrip>
+{% endblock script_block %}
+
+    
+
+
+ {% endcomment %}

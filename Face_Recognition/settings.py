@@ -33,16 +33,23 @@ DEBUG = True
 
 AUTH_USER_MODEL = 'Auth.CustomUser'
 
-#while using Ngrok or any other server 
-# ALLOWED_HOSTS = ['*']
-# # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-# SECURE_SSL_REDIRECT = False #True when using additional server
-# DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
-# # CSRF_COOKIE_SECURE = False
-# # CSRF_USE_SESSIONS = False
-# CSRF_TRUSTED_ORIGINS = ["https://submit.jotform.com","https://1ac7-2409-40c1-103c-3ea-fd7e-e45e-c9d3-f991.ngrok-free.app"]
+# while using Ngrok or any other server 
+ALLOWED_HOSTS = ['*']
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False #True when using additional server
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
+# CSRF_COOKIE_SECURE = False
+# CSRF_USE_SESSIONS = False
+CSRF_TRUSTED_ORIGINS = [" https://bd4e-152-59-33-145.ngrok-free.app","https://8d9d-2409-40c1-101f-cab6-2162-ba13-dd-a223.ngrok-free.app"]
 
 # Application definition
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -51,7 +58,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'debug_toolbar',
+    # 'debug_toolbar',
     'Auth',
 ]
 
@@ -63,7 +70,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 
@@ -146,6 +153,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 INTERNAL_IPS = [
     "127.0.0.1",
+    "192.168.172.97",
+    "https://8d9d-2409-40c1-101f-cab6-2162-ba13-dd-a223.ngrok-free.app",
 ]
 
 
@@ -161,3 +170,4 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 #login 
 LOGIN_URL = 'Auth/login/'
 LOGIN_REDIRECT_URL = "Auth/login/"
+

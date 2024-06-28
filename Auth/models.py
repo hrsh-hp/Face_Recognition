@@ -22,6 +22,8 @@ class CustomUser(AbstractUser):
     forgot_pass_token = models.CharField( max_length=100,null=True, blank=True)
     user_image = models.TextField(blank=True, null=True)
     register_date = models.DateTimeField(auto_now_add=True)
+    enrollment = models.IntegerField(unique=True,null=True, blank=True)
+    department = models.CharField(max_length=100, default="general")
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -33,3 +35,12 @@ class CustomUser(AbstractUser):
     
     def __str__(self) -> str:
         return self.email
+    
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from .views import update_known_faces
+
+@receiver(post_save, sender=CustomUser)
+@receiver(post_delete, sender=CustomUser)
+def update_known_faces_cache_on_change(sender, instance, **kwargs):
+    update_known_faces()

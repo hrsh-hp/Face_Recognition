@@ -34,7 +34,7 @@ DEBUG = True
 AUTH_USER_MODEL = 'Auth.CustomUser'
 
 # while using Ngrok or any other server 
-ALLOWED_HOSTS = ['.vercel.app','.now.sh']
+ALLOWED_HOSTS = ['.vercel.app','.now.sh','127.0.0.1','localhost']
 # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False #True when using additional server
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760

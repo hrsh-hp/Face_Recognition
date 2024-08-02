@@ -23,7 +23,7 @@ from django.views.generic.base import TemplateView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include('Auth.urls')),
-    path("__debug__/", include("debug_toolbar.urls")),
+    # path("__debug__/", include("debug_toolbar.urls")),
     path('map/', TemplateView.as_view(template_name='map.html'), name='map'),
 ]
 

@@ -29,7 +29,7 @@ MEDIA_DIR = Path(BASE_DIR,'media')
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 AUTH_USER_MODEL = 'Auth.CustomUser'
 
@@ -141,8 +141,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [STATIC_URL,]
-STATIC_ROOT = os.path.join(BASE_DIR, 'public/static/')
+# STATICFILES_DIRS = [STATIC_URL,]
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = MEDIA_DIR

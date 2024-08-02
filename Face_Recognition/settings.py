@@ -172,3 +172,11 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 LOGIN_URL = 'Auth/login/'
 LOGIN_REDIRECT_URL = "Auth/login/"
 
+
+import dj_database_url
+
+DATABASES['default'] = dj_database_url.config(
+    default='postgres://default:2KzqB7jmvTsE@ep-falling-firefly-a4xlhexn.us-east-1.aws.neon.tech:5432/verceldb?sslmode=require',
+    conn_max_age=600,
+    conn_health_checks=True,
+)

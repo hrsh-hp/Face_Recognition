@@ -34,13 +34,13 @@ DEBUG = True
 AUTH_USER_MODEL = 'Auth.CustomUser'
 
 # while using Ngrok or any other server 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['.vercel.app','.now.sh']
 # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False #True when using additional server
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
 # CSRF_COOKIE_SECURE = False
 # CSRF_USE_SESSIONS = False
-CSRF_TRUSTED_ORIGINS = [" https://bd4e-152-59-33-145.ngrok-free.app","https://8d9d-2409-40c1-101f-cab6-2162-ba13-dd-a223.ngrok-free.app"]
+CSRF_TRUSTED_ORIGINS = ["https://bd4e-152-59-33-145.ngrok-free.app","https://8d9d-2409-40c1-101f-cab6-2162-ba13-dd-a223.ngrok-free.app"]
 
 # Application definition
 
@@ -142,6 +142,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [STATIC_URL,]
+STATIC_ROOT = os.path.join(BASE_DIR, 'public/static/')
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = MEDIA_DIR

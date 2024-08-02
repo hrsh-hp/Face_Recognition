@@ -104,5 +104,5 @@ def send_email_token(email, email_token):
         return False
     
 def get_ngrok_link():
-    ngrok_link = " https://bd4e-152-59-33-145.ngrok-free.app"
+    ngrok_link = ""
     return ngrok_link if ngrok_link!="" else "127.0.0.1:8000"

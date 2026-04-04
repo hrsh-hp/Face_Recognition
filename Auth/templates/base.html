@@ -4,155 +4,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Recognition</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-    <!-- <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}"> -->
-    <meta property="og:image" content="{% static 'images/logo.png' %}">
-    <style>
-        body {
-            /*background-color: #60686f;*/
-            background: linear-gradient(135deg, #3D3B40 0%, #3D3B40 50%, #BFCFE7 50%, #BFCFE7 100%);
-            background-repeat: no-repeat;
-            color: #000; 
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh; 
-        }
-  
-        .register-container {
-            background-color: #FFF8E3;
-            box-shadow: 20px 20px 20px rgba(0, 0, 0, 0.1);
-            padding: 3%  7%;
-            max-width: 510px;
-            width: 95%;
-            text-align: left;
-            margin: 6% auto;    
-        }
-        
-        .form-group {
-            margin-bottom: 2%;
-        }
-        
-        .custom-file-label {
-            overflow: hidden;
-        }
-         
-        .bottom-text {
-            display: flex;
-            flex-direction: column;
-            align-items: center;    
-        }
-          
-        .bottom-text p {
-            margin-bottom: 3%;
-            
-        }
-          
-        .bottom-text a {
-            color: #007bff;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-          
-        .bottom-text a:hover {
-            color: #0056b3;
-            margin-top: 2px;
-        }
-
-        .image-preview-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-    
-        #previewImage {
-            max-width: 120px;
-            max-height: 100px;
-            margin-left: 5px;
-            border: 1px solid #555;
-            border-radius: 5px;
-        }
-
-          
-          /* Responsive */
-        @media screen and (max-width: 600px) {
-            .login-container {
-              width: 100%;
-              border-radius: 0;
-            }
-          } 
-
-        /*Face recogniton page*/
-        #webcam-container {
-        border: 2px solid #333;
-        border-radius: 5px;
-        overflow: hidden;
-        max-width: 38.5%;
-        height: 38.5%;
-        margin: 0 auto 1%;
-        }
-
-        #webcam {
-            width: 100%;
-            height: 100%;
-        }
-        .button-text
-        {
-            display: flex;
-            margin: 1%;
-        }
-
-        #canvas, #response-image {
-            display: none;
-            margin: 0 auto;
-            border: 2px solid #333;
-            border-radius: 5px;
-            max-width: 63%;
-            height: 39.5%;
-        }
-
-        #name {
-            margin: auto;
-            color: #BFCFE7;
-            font-weight: bold;
-            text-align: center;
-        }
-          
-    </style> 
-    {% block extra_style %}    
-    {% endblock extra_style %}
+    <meta name="description" content="SecureFace — Biometric Access Control & Surveillance System">
+    <title>{% block title %}SecureFace{% endblock %} — Biometric Access Control</title>
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <div class="container" ">
-        {% block body_block %}
-        {% endblock %}
+    {% block navbar %}
+    <nav class="sf-navbar" id="main-navbar">
+        <a href="{% url 'Auth:index' %}" class="sf-navbar-brand">
+            <div class="brand-icon">🛡️</div>
+            <span>SECUREFACE</span>
+        </a>
+        <ul class="sf-navbar-links">
+            {% if user.is_authenticated %}
+                <li><a href="{% url 'Auth:index' %}" id="nav-scan">⎑ Scan</a></li>
+                {% if user.is_staff %}
+                <li><a href="{% url 'Auth:dashboard' %}" id="nav-dashboard">📊 Dashboard</a></li>
+                {% endif %}
+                <li>
+                    <span class="sf-status-badge online">
+                        <span class="pulse-dot"></span>
+                        {{ user.email }}
+                    </span>
+                </li>
+                <li><a href="{% url 'Auth:logout' %}" id="nav-logout">⏻ Logout</a></li>
+            {% else %}
+                <li><a href="{% url 'Auth:login_page' %}" id="nav-login">Login</a></li>
+                <li><a href="{% url 'Auth:register' %}" id="nav-register">Register</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endblock %}
+
+    <!-- Toast Container for Messages -->
+    <div class="toast-container" id="toast-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="sf-toast {% if message.tags %}{{ message.tags }}{% else %}info{% endif %}" onclick="this.classList.add('hiding'); setTimeout(() => this.remove(), 300);">
+                    <span>
+                        {% if message.tags == 'success' %}✓
+                        {% elif message.tags == 'error' %}✕
+                        {% elif message.tags == 'warning' %}⚠
+                        {% else %}ℹ{% endif %}
+                    </span>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    {% block content %}{% endblock %}
 
-    {% block script_block %}   
-    {% endblock script_block %}
+    <!-- Footer -->
+    {% block footer %}
+    <footer style="text-align:center; padding:1.5rem; color:var(--text-muted); font-size:0.75rem; font-family:var(--font-mono); position:relative; z-index:1; border-top:1px solid var(--border-color);">
+        🛡️ SecureFace Biometric Access Control System &nbsp;|&nbsp; Secured Connection &nbsp;|&nbsp; <span id="footer-clock"></span>
+    </footer>
+    {% endblock %}
+
+    <script>
+        // Auto-dismiss toasts
+        document.querySelectorAll('.sf-toast').forEach(toast => {
+            setTimeout(() => {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        });
+
+        // Live clock
+        function updateClock() {
+            const now = new Date();
+            const time = now.toLocaleTimeString('en-US', { hour12: false });
+            const date = now.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+            const clocks = document.querySelectorAll('#footer-clock, #live-clock');
+            clocks.forEach(el => { if(el) el.textContent = `${date} ${time}`; });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>
-
-<!-- 
-    Set insterval logic for image capturing
-    setInterval(() => {
-                            // console.log('Webcam:',webcam) //this is used to show what data is in webcam element
-                            if (webcam && webcam.srcObject) {
-                                webcam.addEventListener('loadeddata', function() {
-                                    // Draw current frame of a webcam 
-                                    context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
-                                    
-                                });
-                                // Convert a frame into base64 Jpeg
-                                const imageData = canvas.toDataURL('image/jpeg');
-                                console.log(imageData);
-                                sendImageToBackend(imageData);
-                                                                
-                            } else{
-                                console.log('Can not get the webcam object');
-                            }
-                        }, 30000); 
-                    
---> 

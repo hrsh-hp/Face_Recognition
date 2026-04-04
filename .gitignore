@@ -5,13 +5,39 @@
 *.log
 *.pot
 *.pyc
-__pycache__/**
+__pycache__/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-media/
-views-old.py
-# Ignore Django Migrations in Development if you are working on team
+security.log
 
-# Only for Development only
+# Media uploads
+media/
+
+# Migrations (remove this line for production)
 **/migrations/**
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# Byte-compiled
+*.py[cod]
+*$py.class

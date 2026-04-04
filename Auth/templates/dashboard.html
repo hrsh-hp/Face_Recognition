@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Security Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .dashboard-grid .full-width {
+        grid-column: 1 / -1;
+    }
+
+    @media (max-width: 1024px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .chart-container {
+        position: relative;
+        height: 280px;
+    }
+
+    .alert-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        transition: background 0.2s;
+    }
+
+    .alert-item:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .alert-item .alert-content {
+        flex: 1;
+    }
+
+    .alert-item .alert-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.2rem;
+    }
+
+    .alert-item .alert-desc {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .alert-item .alert-time {
+        font-size: 0.7rem;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    .login-status-icon {
+        display: inline-block;
+        width: 18px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="sf-main">
+    <!-- Page Header -->
+    <div class="sf-page-header">
+        <h1>📊 SECURITY DASHBOARD</h1>
+        <div class="live-clock">
+            <span class="sf-status-badge online">
+                <span class="pulse-dot"></span>
+                MONITORING
+            </span>
+            <span id="live-clock"></span>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid">
+        <div class="stat-card blue">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-icon">👤</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-label">Total Scans</div>
+            <div class="stat-value">{{ total_scans }}</div>
+            <div class="stat-icon">⎑</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-label">Granted Today</div>
+            <div class="stat-value">{{ today_granted }}</div>
+            <div class="stat-icon">✓</div>
+        </div>
+        <div class="stat-card red">
+            <div class="stat-label">Denied Today</div>
+            <div class="stat-value">{{ today_denied }}</div>
+            <div class="stat-icon">✕</div>
+        </div>
+        <div class="stat-card orange">
+            <div class="stat-label">Active Alerts</div>
+            <div class="stat-value">{{ active_alerts }}</div>
+            <div class="stat-icon">⚠</div>
+        </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        <!-- Access Trends Chart -->
+        <div class="glass-card">
+            <div class="glass-card-header">
+                <h3>📈 7-Day Access Trends</h3>
+            </div>
+            <div class="glass-card-body">
+                <div class="chart-container">
+                    <canvas id="accessChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Alerts -->
+        <div class="glass-card">
+            <div class="glass-card-header">
+                <h3>🚨 Active Alerts</h3>
+                <span class="badge badge-denied">{{ active_alerts }}</span>
+            </div>
+            <div class="glass-card-body" style="padding:0; max-height:320px; overflow-y:auto;">
+                {% for alert in recent_alerts %}
+                <div class="alert-item" id="alert-{{ alert.id }}">
+                    <span class="badge badge-severity-{{ alert.severity }}" style="margin-top:2px;">
+                        {{ alert.severity|upper }}
+                    </span>
+                    <div class="alert-content">
+                        <div class="alert-title">{{ alert.get_alert_type_display }}</div>
+                        <div class="alert-desc">{{ alert.description|truncatechars:80 }}</div>
+                        <div class="alert-desc" style="margin-top:0.2rem;">IP: {{ alert.ip_address }}</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.3rem;">
+                        <div class="alert-time">{{ alert.timestamp|date:"d M H:i" }}</div>
+                        <button class="sf-btn sf-btn-outline sf-btn-sm" style="padding:0.2rem 0.5rem; font-size:0.65rem;" onclick="resolveAlert({{ alert.id }})">Resolve</button>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+                    <div style="font-size:2rem; margin-bottom:0.5rem;">🛡️</div>
+                    No active alerts. System secure.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Access Logs Table -->
+        <div class="glass-card full-width">
+            <div class="glass-card-header">
+                <h3>📋 Recent Access Logs</h3>
+                <span class="text-mono text-muted" style="font-size:0.75rem;">Last 50 entries</span>
+            </div>
+            <div class="glass-card-body" style="padding:0;">
+                <div class="table-wrapper">
+                    <table class="sf-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Identity</th>
+                                <th>Confidence</th>
+                                <th>IP Address</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_logs %}
+                            <tr>
+                                <td>
+                                    <span class="badge badge-{{ log.result }}">{{ log.result|upper }}</span>
+                                </td>
+                                <td class="mono">{{ log.recognized_email|truncatechars:30 }}</td>
+                                <td>
+                                    <span class="mono" style="{% if log.confidence_score >= 70 %}color:var(--accent-primary){% elif log.confidence_score >= 40 %}color:var(--accent-warning){% else %}color:var(--accent-danger){% endif %}">
+                                        {{ log.confidence_score|floatformat:1 }}%
+                                    </span>
+                                </td>
+                                <td class="mono">{{ log.ip_address }}</td>
+                                <td class="mono">{{ log.timestamp|date:"d M Y H:i:s" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" style="text-align:center; color:var(--text-muted); padding:2rem;">No access logs yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Attempts -->
+        <div class="glass-card full-width">
+            <div class="glass-card-header">
+                <h3>🔑 Recent Login Attempts</h3>
+            </div>
+            <div class="glass-card-body" style="padding:0;">
+                <div class="table-wrapper">
+                    <table class="sf-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Email</th>
+                                <th>IP Address</th>
+                                <th>User Agent</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attempt in recent_logins %}
+                            <tr>
+                                <td>
+                                    <span class="login-status-icon">{% if attempt.success %}<span style="color:var(--accent-primary)">✓</span>{% else %}<span style="color:var(--accent-danger)">✕</span>{% endif %}</span>
+                                </td>
+                                <td class="mono">{{ attempt.email|truncatechars:30 }}</td>
+                                <td class="mono">{{ attempt.ip_address }}</td>
+                                <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">{{ attempt.user_agent|truncatechars:40 }}</td>
+                                <td class="mono">{{ attempt.timestamp|date:"d M H:i:s" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" style="text-align:center; color:var(--text-muted); padding:2rem;">No login attempts recorded.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Access Trends Chart
+    const ctx = document.getElementById('accessChart').getContext('2d');
+    const chartLabels = {{ chart_labels|safe }};
+    const chartGranted = {{ chart_granted|safe }};
+    const chartDenied = {{ chart_denied|safe }};
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartLabels.length ? chartLabels : ['No Data'],
+            datasets: [
+                {
+                    label: 'Granted',
+                    data: chartGranted.length ? chartGranted : [0],
+                    backgroundColor: 'rgba(0, 255, 136, 0.6)',
+                    borderColor: 'rgba(0, 255, 136, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                },
+                {
+                    label: 'Denied',
+                    data: chartDenied.length ? chartDenied : [0],
+                    backgroundColor: 'rgba(255, 71, 87, 0.6)',
+                    borderColor: 'rgba(255, 71, 87, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#94a3b8',
+                        font: { family: 'Inter', size: 12 }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#64748b', font: { family: 'JetBrains Mono', size: 11 } },
+                    grid: { color: 'rgba(255,255,255,0.03)' }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#64748b',
+                        font: { family: 'JetBrains Mono', size: 11 },
+                        stepSize: 1
+                    },
+                    grid: { color: 'rgba(255,255,255,0.03)' }
+                }
+            }
+        }
+    });
+
+    // Resolve alert
+    function resolveAlert(alertId) {
+        fetch(`/api/alerts/${alertId}/resolve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const el = document.getElementById(`alert-${alertId}`);
+                el.style.opacity = '0.3';
+                el.querySelector('button').textContent = 'Resolved';
+                el.querySelector('button').disabled = true;
+            }
+        });
+    }
+
+    function getCookie(name) {
+        let v = null;
+        if (document.cookie) {
+            document.cookie.split(';').forEach(c => {
+                c = c.trim();
+                if (c.startsWith(name + '='))
+                    v = decodeURIComponent(c.substring(name.length + 1));
+            });
+        }
+        return v;
+    }
+</script>
+{% endblock %}

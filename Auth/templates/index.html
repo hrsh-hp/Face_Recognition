@@ -1,281 +1,378 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance System</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        
-        .container {
-            background-color: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 800px;
-            overflow: hidden;
-        }
-        
-        .header {
-            background-color: #3D3B40;
-            color: white;
-            padding: 20px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-        }
-        
-        .content {
-            display: flex;
-            padding: 20px;
-        }
-        
-        .student-image {
-            width: 60%;
-            border-radius: 10px;
-            margin-right: 10px;
-        }
-        
-        .empty-space {
-            width: 40%;
-            background-color: #e6e6fa;
-            border-radius: 10px;
-        }
-        #canvas{
-            display: none;
-            margin: 0 auto;
-            border: 2px solid #333;
-            border-radius: 5px;
-            max-width: 63%;
-            height: 39.5%;
-        }
-        .empty-space {
-            width: 300px;
-            margin: 20px;
-            padding: 20px;
-            border: 2px solid #8a2be2;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .student-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #f5f5f5;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .student-card img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            margin-bottom: 20px;
-        }
-        .student-card p {
-            background-color: #8a2be2;
-            color: white;
-            padding: 10px;
-            width: 100%;
-            border-radius: 5px;
-            margin: 5px 0;
-            box-sizing: border-box;
-        }
-        .student-card button{
-            background-color: #8a2be2;
-            color: white;
-            padding: 10px;
-            width: 100%;
-            border-radius: 5px;
-            margin: 5px 0;
-            box-sizing: border-box;
-            border: none;
-        }
-        #data{
-            display: none;
-        }
-        /* Loader styles */
-        #loader {
-            position: relative;    
-            z-index: 9999;
-            box-sizing: border-box;
-        }
+{% extends "base.html" %}
+{% load static %}
 
-        .spinner {
-            border: 16px solid #f3f3f3;
-            border-top: 16px solid #8a2be2; 
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            animation: spin 2s linear infinite;
-        }
+{% block title %}Control Center{% endblock %}
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+{% block extra_head %}
+<style>
+    .recognition-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+        .recognition-layout {
+            grid-template-columns: 1fr;
         }
-        
-        @media (max-width: 768px) {
-            .container {
-                width: 100%; /* Full width for smaller screens */
-                border-radius: 0;
-                box-shadow: none;
-            }
-            
-            .content {
-                flex-direction: column; /* Stack content vertically on smaller screens */
-                align-items: center;
-            }
-            
-            .student-image {
-                width: 100%; /* Full width for video */
-                max-width: 100%; /* Ensures video doesn't overflow */
-                margin-bottom: 20px;
-            }
-            
-            #canvas {
-                max-width: 100%; /* Full width for canvas */
-                height: auto;
-            }
-            
-            .empty-space {
-                width: 100%; 
-                box-sizing: border-box;
-                margin: 20px 0;
-            }
-        }
-        
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Face Detector</h1>
+    }
+
+    .result-section {
+        display: none;
+    }
+
+    .result-section.visible {
+        display: block;
+        animation: resultReveal 0.5s ease-out;
+    }
+
+    .student-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 3px solid var(--accent-primary);
+        object-fit: cover;
+        margin: 0 auto 1rem;
+        display: block;
+    }
+
+    #canvas { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="sf-main">
+    <!-- Page Header -->
+    <div class="sf-page-header">
+        <h1>⎑ CONTROL CENTER</h1>
+        <div class="live-clock">
+            <span class="sf-status-badge online">
+                <span class="pulse-dot"></span>
+                LIVE
+            </span>
+            <span id="live-clock"></span>
         </div>
-        <div class="content">
-            <video id="webcam" autoplay playsinline class="student-image"></video>
-            <canvas id="canvas" height="240" width="320" class="rounded" ></canvas>
-            <div class="empty-space">
-                <div class="student-card" id="student-card">
-                    <div id="loader" style="display:none;">
-                        <div class="spinner"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid">
+        <div class="stat-card green">
+            <div class="stat-label">Registered Users</div>
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-icon">👤</div>
+        </div>
+        <div class="stat-card blue">
+            <div class="stat-label">Today's Scans</div>
+            <div class="stat-value">{{ today_scans }}</div>
+            <div class="stat-icon">⎑</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-label">Access Granted</div>
+            <div class="stat-value">{{ today_granted }}</div>
+            <div class="stat-icon">✓</div>
+        </div>
+        <div class="stat-card red">
+            <div class="stat-label">Access Denied</div>
+            <div class="stat-value">{{ today_denied }}</div>
+            <div class="stat-icon">✕</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="recognition-layout">
+        <!-- Left: Webcam + Result -->
+        <div class="recognition-panel">
+            <div class="glass-card">
+                <div class="glass-card-header">
+                    <h3>📹 Live Camera Feed</h3>
+                    <span class="sf-status-badge online" id="cam-status">
+                        <span class="pulse-dot"></span>
+                        Active
+                    </span>
+                </div>
+                <div class="glass-card-body" style="padding: 0;">
+                    <div class="webcam-wrapper">
+                        <video id="webcam" autoplay playsinline></video>
+                        <div class="scan-overlay"></div>
+                        <div class="webcam-label">
+                            <span class="rec-dot"></span>
+                            LIVE FEED
+                        </div>
                     </div>
-                    <div id="data">
-                        <img id="student-image" alt="Student Image">
-                        <p id="student-enroll"></p>
-                        <p id="student-name"></p>
+                </div>
+            </div>
+            <canvas id="canvas" width="640" height="480"></canvas>
+
+            <!-- Capture Button -->
+            <button class="sf-btn sf-btn-primary sf-btn-block" id="capture-btn" onclick="captureImage()">
+                ⊙ SCAN &amp; IDENTIFY
+            </button>
+
+            <!-- Recognition Result -->
+            <div class="result-section" id="result-section">
+                <div id="access-result-banner"></div>
+
+                <div class="glass-card mt-1">
+                    <div class="glass-card-body">
+                        <!-- Confidence Bar -->
+                        <div class="confidence-bar-wrapper">
+                            <div class="confidence-bar-label">
+                                <span>CONFIDENCE</span>
+                                <span id="confidence-value" class="text-mono">0%</span>
+                            </div>
+                            <div class="confidence-bar-track">
+                                <div class="confidence-bar-fill" id="confidence-fill" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Student Info -->
+                        <div class="student-info" id="student-info">
+                            <div class="student-info-item">
+                                <div class="info-label">Name</div>
+                                <div class="info-value" id="res-name">—</div>
+                            </div>
+                            <div class="student-info-item">
+                                <div class="info-label">Email</div>
+                                <div class="info-value" id="res-email">—</div>
+                            </div>
+                            <div class="student-info-item">
+                                <div class="info-label">Enrollment</div>
+                                <div class="info-value" id="res-enrollment">—</div>
+                            </div>
+                            <div class="student-info-item">
+                                <div class="info-label">Department</div>
+                                <div class="info-value" id="res-department">—</div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <button onclick="captureImage()">Capture</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Activity Log -->
+        <div>
+            <div class="glass-card">
+                <div class="glass-card-header">
+                    <h3>📋 Activity Log</h3>
+                    <span class="badge badge-granted" style="font-size:0.65rem;" id="log-count">{{ recent_logs|length }} entries</span>
+                </div>
+                <div class="glass-card-body" style="padding: 0;">
+                    <div class="activity-log" id="activity-log">
+                        {% for log in recent_logs %}
+                        <div class="log-entry">
+                            <div class="log-icon {{ log.result }}">
+                                {% if log.result == 'granted' %}✓
+                                {% elif log.result == 'unknown' %}?
+                                {% elif log.result == 'error' %}!
+                                {% else %}✕{% endif %}
+                            </div>
+                            <div class="log-text">
+                                <strong>{{ log.recognized_email|truncatechars:20 }}</strong><br>
+                                <span style="font-size:0.7rem;">{{ log.ip_address }} · {{ log.confidence_score|floatformat:1 }}%</span>
+                            </div>
+                            <div class="log-time">
+                                {{ log.timestamp|date:"H:i" }}<br>
+                                {{ log.timestamp|date:"d M" }}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="log-entry" style="justify-content:center; color:var(--text-muted);">
+                            No activity yet. Start scanning!
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="glass-card mt-2">
+                <div class="glass-card-header">
+                    <h3>⚡ Quick Actions</h3>
+                </div>
+                <div class="glass-card-body" style="display:flex; flex-direction:column; gap:0.5rem;">
+                    <button class="sf-btn sf-btn-outline sf-btn-sm sf-btn-block" id="auto-scan-btn" onclick="toggleAutoScan()">
+                        ↻ Auto-Scan: <span id="auto-scan-status">OFF</span>
+                    </button>
+                    {% if user.is_staff %}
+                    <a href="{% url 'Auth:dashboard' %}" class="sf-btn sf-btn-outline sf-btn-sm sf-btn-block">📊 Security Dashboard</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-</body>
+</main>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    
-    const webcam = document.getElementById('webcam')
-    const canvas = document.getElementById('canvas')
-    //const capture = document.getElementById('capture')
-    const context = canvas.getContext('2d')
-    //const name = document.getElementById('name')
-    const studentImg = document.getElementById('student-image');
-    const studentCard = document.getElementById("student-card");
-    const studentEnroll = document.getElementById('student-enroll');
-    const studentName = document.getElementById("student-name");
-    const stuData = document.getElementById('data');
-    const captureBtn = document.querySelector("button");
-    var loader = document.getElementById('loader');
+    const webcam = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const captureBtn = document.getElementById('capture-btn');
+    const resultSection = document.getElementById('result-section');
+    let autoScanInterval = null;
 
-
-    // Request permission to access the camera
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then((stream) => {
-                webcam.srcObject = stream;
-                // Every task in this will be done at regular intervals 
-            })
-            .catch((error) => {
-                console.error('Error accessing camera:', error);
-            });
-    } else {
-        console.error('getUserMedia is not supported in this browser');
-    }
-
-    function captureImage(){
-        if (webcam && webcam.srcObject){
-                // Draw current frame of a webcam 
-                //console.log('webcam size:', webcam.videoWidth, webcam.videoHeight);
-                context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
-                
-                stuData.style = "display:none;";
-                captureBtn.disabled = true;
-                // Convert a frame into base64 Jpeg
-                const imageData = canvas.toDataURL('image/jpeg');
-                loader.style.display = 'block';
-                console.log(imageData);
-                sendImageToBackend(imageData);
-                
-
-        }else{
-            console.log('Cannot get the webcam obeject');
+    // Get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
         }
+        return cookieValue;
     }
 
+    // Start webcam
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: 640, height: 480 }
+        })
+        .then(stream => {
+            webcam.srcObject = stream;
+        })
+        .catch(error => {
+            console.error('Camera error:', error);
+            document.getElementById('cam-status').innerHTML = '<span style="color:var(--accent-danger);">● Offline</span>';
+        });
+    }
 
-    // The logic of sending image to Django backend is here
-    function sendImageToBackend(imageData){
-        //console.log('sendiamage:',imageData);
-        //get the image of current frame and POST it to the backend view
+    function captureImage() {
+        if (!webcam || !webcam.srcObject) {
+            showToast('Camera not available', 'error');
+            return;
+        }
+
+        context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        captureBtn.disabled = true;
+        captureBtn.innerHTML = '<div class="sf-spinner" style="width:20px;height:20px;border-width:2px;margin:0;"></div> SCANNING...';
+
+        sendImageToBackend(imageData);
+    }
+
+    function sendImageToBackend(imageData) {
         fetch('/face_recognize/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
-            
+                'X-CSRFToken': getCookie('csrftoken'),
             },
             body: `imageData=${encodeURIComponent(imageData)}`,
         })
-        .then(response => response.json())  // Get the Json response 
+        .then(response => response.json())
         .then(data => {
-           // console.log(data.student['email']);
-            if(data.success){
-                if (data.student['email'] === "Unknown!!" ){
-                    stuData.style = "display:block;"
-                    studentName.textContent = "Unkown!!"
-                    studentEnroll.textContent = "None";
-                    studentImg.src = `data:image/jpeg;base64, ${data.image}`;
-                }
-                else{
-                    stuData.style = 'display:block;'
-                    studentName.textContent = data.student['name'];
-                    studentEnroll.textContent = data.student['enrollment'];
-                    studentImg.src = `data:image/jpeg;base64, ${data.image}`;
-                // console.log(data.image);
-                }
-            }
-            else{
-                alert(data.err);
-            }
             captureBtn.disabled = false;
-            loader.style.display = 'none';
-            
+            captureBtn.innerHTML = '⊙ SCAN & IDENTIFY';
+
+            if (data.success) {
+                displayResult(data);
+            } else {
+                showToast(data.error || 'Recognition failed', 'error');
+            }
         })
         .catch(error => {
             console.error('Error:', error);
+            captureBtn.disabled = false;
+            captureBtn.innerHTML = '⊙ SCAN & IDENTIFY';
+            showToast('Network error. Please try again.', 'error');
         });
-        
     }
-    setInterval(captureImage, 15000);
+
+    function displayResult(data) {
+        resultSection.classList.add('visible');
+        const banner = document.getElementById('access-result-banner');
+        const confidence = data.confidence || 0;
+        const student = data.student;
+
+        // Confidence bar
+        document.getElementById('confidence-value').textContent = confidence + '%';
+        const fill = document.getElementById('confidence-fill');
+        fill.style.width = confidence + '%';
+
+        if (student.status === 'granted') {
+            banner.className = 'access-result access-granted';
+            banner.innerHTML = '✓ ACCESS GRANTED';
+
+            document.getElementById('res-name').textContent = student.name || '—';
+            document.getElementById('res-email').textContent = student.email || '—';
+            document.getElementById('res-enrollment').textContent = student.enrollment || '—';
+            document.getElementById('res-department').textContent = student.department || '—';
+
+            addLogEntry('granted', student.email, confidence);
+        } else if (student.status === 'no_face') {
+            banner.className = 'access-result access-unknown';
+            banner.innerHTML = '⚠ NO FACE DETECTED';
+
+            document.getElementById('res-name').textContent = '—';
+            document.getElementById('res-email').textContent = 'No face in frame';
+            document.getElementById('res-enrollment').textContent = '—';
+            document.getElementById('res-department').textContent = '—';
+        } else {
+            banner.className = 'access-result access-denied';
+            banner.innerHTML = '✕ ACCESS DENIED';
+
+            document.getElementById('res-name').textContent = 'Unknown';
+            document.getElementById('res-email').textContent = 'Not recognized';
+            document.getElementById('res-enrollment').textContent = '—';
+            document.getElementById('res-department').textContent = '—';
+
+            addLogEntry('denied', 'Unknown', confidence);
+        }
+    }
+
+    function addLogEntry(type, email, confidence) {
+        const log = document.getElementById('activity-log');
+        const icons = { granted: '✓', denied: '✕', unknown: '?' };
+        const now = new Date();
+        const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.style.animation = 'fadeIn 0.4s ease';
+        entry.innerHTML = `
+            <div class="log-icon ${type}">${icons[type] || '?'}</div>
+            <div class="log-text">
+                <strong>${email.substring(0, 20)}</strong><br>
+                <span style="font-size:0.7rem;">${confidence}% confidence</span>
+            </div>
+            <div class="log-time">${time}<br>Now</div>
+        `;
+        log.insertBefore(entry, log.firstChild);
+    }
+
+    function toggleAutoScan() {
+        const status = document.getElementById('auto-scan-status');
+        const btn = document.getElementById('auto-scan-btn');
+
+        if (autoScanInterval) {
+            clearInterval(autoScanInterval);
+            autoScanInterval = null;
+            status.textContent = 'OFF';
+            btn.style.borderColor = 'var(--border-color)';
+        } else {
+            autoScanInterval = setInterval(captureImage, 15000);
+            status.textContent = 'ON (15s)';
+            btn.style.borderColor = 'var(--accent-primary)';
+            showToast('Auto-scan enabled: scanning every 15 seconds', 'info');
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+        const toast = document.createElement('div');
+        toast.className = `sf-toast ${type}`;
+        toast.innerHTML = `<span>${icons[type]}</span><span>${message}</span>`;
+        toast.onclick = () => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 300); };
+        container.appendChild(toast);
+        setTimeout(() => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 300); }, 4000);
+    }
 </script>
-</html>
-
-
-
+{% endblock %}

@@ -1,106 +1,513 @@
-<!DOCTYPE html>
 {% extends "base.html" %}
-        
-{% block body_block %}
-    <div class="row justify-content-center min-vh-100 align-items-center">
-        <div class="col-md-8">
-            <div class="register-container rounded">
-                <h2 class="text-center mb-4">Register</h2>
-                <form method="POST">
-                    {% csrf_token %}
-                    {% if messages %}
-                        {% for message in messages %}
-                        <div class="alert alert-info" role="alert">
-                            {{ message }}
-                          </div>    
-                        {% endfor %}
-                    {% endif %}
+{% load static %}
 
-                    <div class="form-group">
-                        <label for="Name">Name</label>
-                        <div class="row">
-                        <div class="col">
-                          <input type="text" class="form-control" name="first_name" placeholder="First name" aria-label="First name">
-                        </div>
-                        <div class="col">
-                          <input type="text" class="form-control" placeholder="Last name" name="last_name" aria-label="Last name">
-                        </div>
-                    </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" class="form-control" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Phone Number</label>
-                        <input type="tel" class="form-control" name="phone_num" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Enrollment</label>
-                        <input type="number" class="form-control" name="enrollment" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" class="form-control" name="password" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="userImage">Profile Image (max 50KB)</label>
-                        <div class="form-group image-preview-container">
-                            <input type="file" class="form-control" id="userImage" name="user_image" accept="image/*" max-size="51200">
-                            <img id="previewImage" src="#" alt="Preview" style="display: none;">
-                            <input type="hidden" id="image_base64" name="image_base64" value="">
-                        </div>
-                    </div>
-                    <button type="submit" name="submit" id="submit" class="btn btn-primary form-control register-btn">Register</button>
+{% block title %}Register{% endblock %}
 
-                    <div class="bottom-text mt-2">
-                        <p>Alreday have an account? <a href="{% url 'Auth:login_page' %}">Log In</a></p>
-                        <p><a href="#">Forgot password?</a></p>
-                    </div>
-                </form>
-                
-            </div>
-        </div>
-    </div>
-        
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .register-card {
+        max-width: 560px;
+    }
+
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .step-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border-color);
+        transition: all 0.3s;
+    }
+
+    .step-dot.active {
+        background: var(--accent-primary);
+        box-shadow: 0 0 10px var(--accent-primary);
+    }
+
+    .step-dot.done {
+        background: var(--accent-secondary);
+    }
+
+    .form-step {
+        display: none;
+    }
+
+    .form-step.active {
+        display: block;
+        animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-bright);
+        margin-bottom: 0.3rem;
+    }
+
+    .step-subtitle {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+    }
+
+    .name-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .webcam-preview-container {
+        position: relative;
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        min-height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.3);
+        margin-bottom: 1rem;
+        transition: all 0.3s;
+    }
+
+    .webcam-preview-container.has-capture {
+        border-color: var(--accent-primary);
+        border-style: solid;
+    }
+
+    .webcam-preview-container video,
+    .webcam-preview-container canvas {
+        width: 100%;
+        display: block;
+        border-radius: var(--radius-md);
+    }
+
+    .webcam-preview-container canvas {
+        display: none;
+    }
+
+    .webcam-preview-container .placeholder-text {
+        text-align: center;
+        color: var(--text-muted);
+        padding: 2rem;
+    }
+
+    .webcam-preview-container .placeholder-text .icon {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .capture-controls {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .step-nav {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1.5rem;
+    }
+
+    .password-requirements {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.25rem;
+        margin-top: 0.5rem;
+    }
+
+    .password-requirements .req {
+        font-size: 0.7rem;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        transition: color 0.3s;
+    }
+
+    .password-requirements .req.met {
+        color: var(--accent-primary);
+    }
+
+    .captured-preview {
+        display: none;
+        text-align: center;
+    }
+
+    .captured-preview img {
+        max-width: 200px;
+        border-radius: var(--radius-md);
+        border: 2px solid var(--accent-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 600px) {
+        .name-row { grid-template-columns: 1fr; }
+        .password-requirements { grid-template-columns: 1fr; }
+    }
+</style>
 {% endblock %}
-{% block script_block %}
 
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card glass-card register-card">
+        <div class="auth-header">
+            <div class="auth-security-badge">
+                <span class="pulse-dot" style="width:5px;height:5px;background:var(--accent-primary);border-radius:50%;display:inline-block;"></span>
+                Biometric Enrollment
+            </div>
+            <h1>🛡️ Enroll</h1>
+            <p>Register for SecureFace Access</p>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step-dot active" id="dot-1"></div>
+            <div class="step-dot" id="dot-2"></div>
+            <div class="step-dot" id="dot-3"></div>
+        </div>
+
+        <form method="POST" id="register-form">
+            {% csrf_token %}
+
+            <!-- Step 1: Personal Info -->
+            <div class="form-step active" id="step-1">
+                <div class="step-title">Personal Information</div>
+                <div class="step-subtitle">Enter your identity details</div>
+
+                <div class="name-row">
+                    <div class="sf-form-group">
+                        <label for="first_name">First Name</label>
+                        <input type="text" class="sf-input" id="first_name" name="first_name" placeholder="John">
+                    </div>
+                    <div class="sf-form-group">
+                        <label for="last_name">Last Name</label>
+                        <input type="text" class="sf-input" id="last_name" name="last_name" placeholder="Doe">
+                    </div>
+                </div>
+
+                <div class="sf-form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" class="sf-input" id="email" name="email" placeholder="you@example.com" required>
+                </div>
+
+                <div class="sf-form-group">
+                    <label for="phone_num">Phone Number</label>
+                    <input type="tel" class="sf-input" id="phone_num" name="phone_num" placeholder="+91 XXXXX XXXXX">
+                </div>
+
+                <div class="sf-form-group">
+                    <label for="enrollment">Enrollment Number</label>
+                    <input type="number" class="sf-input" id="enrollment" name="enrollment" placeholder="e.g. 220140107001">
+                </div>
+
+                <div class="sf-form-group">
+                    <label for="department">Department</label>
+                    <select class="sf-input" id="department" name="department">
+                        <option value="general">General</option>
+                        <option value="computer_science">Computer Science</option>
+                        <option value="information_technology">Information Technology</option>
+                        <option value="electronics">Electronics & Communication</option>
+                        <option value="mechanical">Mechanical Engineering</option>
+                        <option value="civil">Civil Engineering</option>
+                        <option value="electrical">Electrical Engineering</option>
+                    </select>
+                </div>
+
+                <div class="step-nav">
+                    <a href="{% url 'Auth:login_page' %}" class="sf-btn sf-btn-outline sf-btn-sm">← Back to Login</a>
+                    <button type="button" class="sf-btn sf-btn-primary sf-btn-sm" onclick="goToStep(2)">Next →</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Security Credentials -->
+            <div class="form-step" id="step-2">
+                <div class="step-title">Security Credentials</div>
+                <div class="step-subtitle">Set up your authentication password</div>
+
+                <div class="sf-form-group">
+                    <label for="password">Password *</label>
+                    <input type="password" class="sf-input" id="password" name="password" placeholder="••••••••" required minlength="8" oninput="checkPasswordStrength(this.value)">
+                    <div class="password-strength">
+                        <div class="strength-bar-track">
+                            <div class="strength-bar-fill" id="strength-fill"></div>
+                        </div>
+                        <div class="strength-label" id="strength-label" style="color: var(--text-muted);">Enter a password</div>
+                    </div>
+                    <div class="password-requirements">
+                        <div class="req" id="req-length">○ 8+ characters</div>
+                        <div class="req" id="req-upper">○ Uppercase letter</div>
+                        <div class="req" id="req-lower">○ Lowercase letter</div>
+                        <div class="req" id="req-number">○ Number</div>
+                        <div class="req" id="req-special">○ Special char</div>
+                    </div>
+                </div>
+
+                <div class="sf-form-group">
+                    <label for="confirm_password">Confirm Password *</label>
+                    <input type="password" class="sf-input" id="confirm_password" placeholder="••••••••" required minlength="8">
+                </div>
+
+                <div class="step-nav">
+                    <button type="button" class="sf-btn sf-btn-outline sf-btn-sm" onclick="goToStep(1)">← Back</button>
+                    <button type="button" class="sf-btn sf-btn-primary sf-btn-sm" onclick="goToStep(3)">Next: Biometric →</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Biometric Enrollment -->
+            <div class="form-step" id="step-3">
+                <div class="step-title">Biometric Enrollment</div>
+                <div class="step-subtitle">Capture your face for biometric authentication</div>
+
+                <div class="webcam-preview-container" id="webcam-container">
+                    <video id="reg-webcam" autoplay playsinline style="display:none;"></video>
+                    <canvas id="reg-canvas" style="display:none;"></canvas>
+                    <div class="placeholder-text" id="cam-placeholder">
+                        <span class="icon">📷</span>
+                        <div>Click "Start Camera" to begin</div>
+                        <div style="font-size:0.7rem; margin-top:0.3rem;">Your face will be used for biometric access</div>
+                    </div>
+                </div>
+
+                <div class="captured-preview" id="captured-preview">
+                    <img id="captured-img" src="" alt="Captured face">
+                    <div style="font-size:0.75rem; color:var(--accent-primary); font-family:var(--font-mono);">✓ BIOMETRIC CAPTURED</div>
+                </div>
+
+                <input type="hidden" id="image_base64" name="image_base64" value="">
+
+                <div class="capture-controls">
+                    <button type="button" class="sf-btn sf-btn-outline sf-btn-sm" id="start-cam-btn" onclick="startCamera()" style="flex:1;">📷 Start Camera</button>
+                    <button type="button" class="sf-btn sf-btn-primary sf-btn-sm" id="capture-btn" onclick="capturePhoto()" style="flex:1; display:none;">⊙ Capture Face</button>
+                    <button type="button" class="sf-btn sf-btn-outline sf-btn-sm" id="retake-btn" onclick="retakePhoto()" style="flex:1; display:none;">↻ Retake</button>
+                </div>
+
+                <!-- Fallback file upload -->
+                <div style="text-align:center; color:var(--text-muted); font-size:0.75rem; margin-bottom:0.75rem;">— or upload an image —</div>
+                <div class="sf-file-input" style="margin-bottom:1rem;">
+                    <input type="file" id="userImage" accept="image/*" onchange="handleFileUpload(event)">
+                    <div class="file-label">📁 Choose an image file</div>
+                </div>
+
+                <div class="step-nav">
+                    <button type="button" class="sf-btn sf-btn-outline sf-btn-sm" onclick="goToStep(2)">← Back</button>
+                    <button type="submit" class="sf-btn sf-btn-primary sf-btn-sm" id="submit-btn">🛡️ Complete Enrollment</button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const userImageInput = document.getElementById('userImage');
-        const previewImage = document.getElementById('previewImage');
+    let currentStep = 1;
+    let cameraStream = null;
 
-        userImageInput.addEventListener('change', function () {
-            const file = userImageInput.files[0];
+    function goToStep(step) {
+        // Validation before moving forward
+        if (step > currentStep) {
+            if (currentStep === 1) {
+                const email = document.getElementById('email');
+                if (!email.value) {
+                    email.classList.add('error');
+                    email.focus();
+                    return;
+                }
+            }
+            if (currentStep === 2) {
+                const pass = document.getElementById('password');
+                const confirm = document.getElementById('confirm_password');
+                if (pass.value.length < 8) {
+                    pass.classList.add('error');
+                    pass.focus();
+                    return;
+                }
+                if (pass.value !== confirm.value) {
+                    confirm.classList.add('error');
+                    confirm.focus();
+                    showToast('Passwords do not match', 'error');
+                    return;
+                }
+            }
+        }
 
-            if (file) {
-                // Read the selected image and display a preview
-                const reader = new FileReader();
+        document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.step-dot').forEach(d => d.classList.remove('active', 'done'));
 
-                reader.onload = function (e) {
-                    const base64Image = e.target.result;
-                    previewImage.src = base64Image;
-                    previewImage.style.display = 'block';
+        document.getElementById(`step-${step}`).classList.add('active');
 
-                    // Set the base64-encoded image data to the hidden input field
-                    document.getElementById('image_base64').value = base64Image;
-                    console.log(document.getElementById('image_base64').value)
-                    //document.getElementById('userImage').value = base64Image;
-                };
+        for (let i = 1; i <= 3; i++) {
+            const dot = document.getElementById(`dot-${i}`);
+            if (i < step) dot.classList.add('done');
+            if (i === step) dot.classList.add('active');
+        }
 
-                reader.readAsDataURL(file);
+        currentStep = step;
+    }
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        const fill = document.getElementById('strength-fill');
+        const label = document.getElementById('strength-label');
+        const reqs = {
+            length: password.length >= 8,
+            upper: /[A-Z]/.test(password),
+            lower: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            special: /[^A-Za-z0-9]/.test(password),
+        };
+
+        Object.entries(reqs).forEach(([key, met]) => {
+            const el = document.getElementById(`req-${key}`);
+            el.classList.toggle('met', met);
+            el.textContent = (met ? '● ' : '○ ') + el.textContent.substring(2);
+        });
+
+        const score = Object.values(reqs).filter(Boolean).length;
+
+        fill.className = 'strength-bar-fill';
+        if (score <= 1) { fill.classList.add('weak'); label.textContent = 'Weak'; label.style.color = 'var(--accent-danger)'; }
+        else if (score <= 2) { fill.classList.add('fair'); label.textContent = 'Fair'; label.style.color = 'var(--accent-warning)'; }
+        else if (score <= 3) { fill.classList.add('good'); label.textContent = 'Good'; label.style.color = 'var(--accent-secondary)'; }
+        else { fill.classList.add('strong'); label.textContent = 'Strong'; label.style.color = 'var(--accent-primary)'; }
+    }
+
+    // Webcam capture
+    function startCamera() {
+        const video = document.getElementById('reg-webcam');
+        const placeholder = document.getElementById('cam-placeholder');
+        const container = document.getElementById('webcam-container');
+        const startBtn = document.getElementById('start-cam-btn');
+        const captureBtn = document.getElementById('capture-btn');
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 640, height: 480 } })
+            .then(stream => {
+                cameraStream = stream;
+                video.srcObject = stream;
+                video.style.display = 'block';
+                placeholder.style.display = 'none';
+                container.classList.add('active');
+                startBtn.style.display = 'none';
+                captureBtn.style.display = 'flex';
+            })
+            .catch(err => {
+                showToast('Camera access denied. Use file upload instead.', 'warning');
+            });
+    }
+
+    function capturePhoto() {
+        const video = document.getElementById('reg-webcam');
+        const canvas = document.getElementById('reg-canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+
+        const imageData = canvas.toDataURL('image/jpeg', 0.9);
+        document.getElementById('image_base64').value = imageData;
+
+        // Show preview
+        const preview = document.getElementById('captured-preview');
+        document.getElementById('captured-img').src = imageData;
+        preview.style.display = 'block';
+
+        // Update UI
+        video.style.display = 'none';
+        document.getElementById('webcam-container').style.display = 'none';
+        document.getElementById('capture-btn').style.display = 'none';
+        document.getElementById('retake-btn').style.display = 'flex';
+
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(t => t.stop());
+        }
+    }
+
+    function retakePhoto() {
+        document.getElementById('captured-preview').style.display = 'none';
+        document.getElementById('webcam-container').style.display = 'flex';
+        document.getElementById('retake-btn').style.display = 'none';
+        document.getElementById('image_base64').value = '';
+        startCamera();
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const base64 = e.target.result;
+            document.getElementById('image_base64').value = base64;
+
+            const preview = document.getElementById('captured-preview');
+            document.getElementById('captured-img').src = base64;
+            preview.style.display = 'block';
+
+            document.getElementById('webcam-container').style.display = 'none';
+            document.getElementById('start-cam-btn').style.display = 'none';
+            document.getElementById('retake-btn').style.display = 'flex';
+
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+        const toast = document.createElement('div');
+        toast.className = `sf-toast ${type}`;
+        toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${message}</span>`;
+        toast.onclick = () => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 300); };
+        container.appendChild(toast);
+        setTimeout(() => { toast.classList.add('hiding'); setTimeout(() => toast.remove(), 300); }, 5000);
+    }
+
+    // Form submit
+    document.getElementById('register-form').addEventListener('submit', function(e) {
+        const img = document.getElementById('image_base64').value;
+        if (!img) {
+            e.preventDefault();
+            showToast('Please capture your face or upload an image', 'error');
+            return;
+        }
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('submit-btn').textContent = '⟳ Enrolling...';
+    });
+
+    // Input glow
+    document.querySelectorAll('.sf-input').forEach(input => {
+        input.addEventListener('input', function() {
+            if (this.checkValidity() && this.value.length > 0) {
+                this.classList.remove('error');
+                this.classList.add('valid');
+            } else if (this.value.length > 0 && this.required) {
+                this.classList.remove('valid');
+                this.classList.add('error');
             } else {
-                // If no image is selected, hide the preview
-                previewImage.style.display = 'none';
-                // Clear the base64-encoded image data in the hidden input field
-                document.getElementById('image_base64').value = '';
+                this.classList.remove('valid', 'error');
             }
         });
     });
 </script>
-
-{% endblock script_block %}
-
+{% endblock %}

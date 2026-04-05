@@ -143,7 +143,7 @@ def recognize_face(request):
             if not known:
                 break
 
-            face_distances = face_recognition.face_distances(
+            face_distances = face_recognition.face_distance(
                 list(known.values()), face_encoding
             )
             matches = face_recognition.compare_faces(

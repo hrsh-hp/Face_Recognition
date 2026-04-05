@@ -131,12 +131,34 @@ class SecurityAlert(models.Model):
 
 
 # Signal to update face cache when users change
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 
 
+@receiver(pre_save, sender=CustomUser)
+def track_image_change(sender, instance, **kwargs):
+    """Track whether user_image changed so we only re-encode when needed."""
+    if instance.pk:
+        try:
+            old = CustomUser.objects.get(pk=instance.pk)
+            instance._image_changed = (old.user_image != instance.user_image)
+        except CustomUser.DoesNotExist:
+            instance._image_changed = True
+    else:
+        # New user
+        instance._image_changed = bool(instance.user_image)
+
+
 @receiver(post_save, sender=CustomUser)
+def update_known_faces_on_image_change(sender, instance, created, **kwargs):
+    """Only re-encode faces when user_image actually changed or a new user is created with an image."""
+    image_changed = getattr(instance, '_image_changed', False)
+    if image_changed or (created and instance.user_image):
+        from .views import update_known_faces
+        update_known_faces()
+
+
 @receiver(post_delete, sender=CustomUser)
-def update_known_faces_cache_on_change(sender, instance, **kwargs):
+def update_known_faces_on_delete(sender, instance, **kwargs):
     from .views import update_known_faces
     update_known_faces()
